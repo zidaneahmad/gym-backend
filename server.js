@@ -1,9 +1,10 @@
 require("dotenv").config();
-console.log("firebase-admin type:", typeof admin);
-console.log("firebase-admin keys:", Object.keys(admin));
 const express = require("express");
 const midtransClient = require("midtrans-client");
 const admin = require("firebase-admin");
+
+console.log("firebase-admin type:", typeof admin);
+console.log("firebase-admin credential:", typeof admin.credential);
 
 const app = express();
 app.use(express.json());
@@ -19,7 +20,6 @@ try {
   console.log("Service account berhasil diparsing, project_id:", serviceAccount.project_id);
 } catch (e) {
   console.error("Gagal parse FIREBASE_SERVICE_ACCOUNT:", e.message);
-  console.error("Raw value (50 char pertama):", process.env.FIREBASE_SERVICE_ACCOUNT?.substring(0, 50));
   process.exit(1);
 }
 
