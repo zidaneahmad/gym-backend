@@ -8,9 +8,16 @@ app.use(express.json());
 
 let serviceAccount;
 try {
-  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!raw) {
+    console.error("FIREBASE_SERVICE_ACCOUNT kosong atau tidak ada!");
+    process.exit(1);
+  }
+  serviceAccount = JSON.parse(raw);
+  console.log("Service account berhasil diparsing, project_id:", serviceAccount.project_id);
 } catch (e) {
   console.error("Gagal parse FIREBASE_SERVICE_ACCOUNT:", e.message);
+  console.error("Raw value (50 char pertama):", process.env.FIREBASE_SERVICE_ACCOUNT?.substring(0, 50));
   process.exit(1);
 }
 
