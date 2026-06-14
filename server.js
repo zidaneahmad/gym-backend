@@ -1,5 +1,7 @@
 require("dotenv").config();
-
+const admin = require("firebase-admin");
+console.log("firebase-admin type:", typeof admin);
+console.log("firebase-admin keys:", Object.keys(admin));
 const express = require("express");
 const midtransClient = require("midtrans-client");
 const admin = require("firebase-admin");
