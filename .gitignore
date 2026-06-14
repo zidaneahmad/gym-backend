@@ -1,0 +1,8 @@
+node_modules/
+.env
+serviceAccountKey.json
+
+# Backend
+Backend_Midtrans/node_modules/
+Backend_Midtrans/.env
+Backend_Midtrans/serviceAccountKey.json
