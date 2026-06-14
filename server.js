@@ -7,10 +7,26 @@ const app = express();
 app.use(express.json());
 
 let serviceAccount;
-try {
-  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-} catch (e) {
-  console.error("Gagal parse FIREBASE_SERVICE_ACCOUNT:", e.message);
+
+// Try to get from environment variable first, then fall back to file
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch (e) {
+    console.error("Gagal parse FIREBASE_SERVICE_ACCOUNT:", e.message);
+    process.exit(1);
+  }
+} else {
+  try {
+    serviceAccount = require("./serviceAccountKey.json");
+  } catch (e) {
+    console.error("Gagal load serviceAccountKey.json:", e.message);
+    process.exit(1);
+  }
+}
+
+if (!serviceAccount) {
+  console.error("serviceAccount is undefined");
   process.exit(1);
 }
 
