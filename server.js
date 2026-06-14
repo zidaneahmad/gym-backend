@@ -7,26 +7,17 @@ const app = express();
 app.use(express.json());
 
 let serviceAccount;
-
-// Try to get from environment variable first, then fall back to file
-if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-  try {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  } catch (e) {
-    console.error("Gagal parse FIREBASE_SERVICE_ACCOUNT:", e.message);
+try {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!raw) {
+    console.error("FIREBASE_SERVICE_ACCOUNT kosong atau tidak ada!");
     process.exit(1);
   }
-} else {
-  try {
-    serviceAccount = require("./serviceAccountKey.json");
-  } catch (e) {
-    console.error("Gagal load serviceAccountKey.json:", e.message);
-    process.exit(1);
-  }
-}
-
-if (!serviceAccount) {
-  console.error("serviceAccount is undefined");
+  serviceAccount = JSON.parse(raw);
+  console.log("Service account berhasil diparsing, project_id:", serviceAccount.project_id);
+} catch (e) {
+  console.error("Gagal parse FIREBASE_SERVICE_ACCOUNT:", e.message);
+  console.error("Raw value (50 char pertama):", process.env.FIREBASE_SERVICE_ACCOUNT?.substring(0, 50));
   process.exit(1);
 }
 
