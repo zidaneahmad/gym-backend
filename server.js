@@ -1,7 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const midtransClient = require("midtrans-client");
-const admin = require("firebase-admin");
+const { initializeApp, cert } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
 
 console.log("firebase-admin type:", typeof admin);
 console.log("firebase-admin credential:", typeof admin.credential);
@@ -23,14 +24,14 @@ try {
   process.exit(1);
 }
 
-admin.initializeApp({
-  credential: admin.credential.cert({
+initializeApp({
+  credential: cert({
     projectId: serviceAccount.project_id,
     clientEmail: serviceAccount.client_email,
     privateKey: serviceAccount.private_key.replace(/\\n/g, '\n'),
   }),
 });
-const db = admin.firestore();
+const db = getFirestore();
 
 // ── Create Snap Token ──────────────────────────────────────
 app.post("/create-token", async (req, res) => {
@@ -72,7 +73,7 @@ app.post("/create-token", async (req, res) => {
       orderId,
       amount: price,
       status: "pending",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: new Date(),
     });
 
     return res.json({token: transaction.token, orderId});
