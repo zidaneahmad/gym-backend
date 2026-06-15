@@ -4,9 +4,6 @@ const midtransClient = require("midtrans-client");
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 
-console.log("firebase-admin type:", typeof admin);
-console.log("firebase-admin credential:", typeof admin.credential);
-
 const app = express();
 app.use(express.json());
 
