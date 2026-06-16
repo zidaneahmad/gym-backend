@@ -130,7 +130,7 @@ app.post("/webhook", async (req, res) => {
 
         const startDate = Date.now();
         const endDate =
-          startDate + (pkg.durationInDays * 24 * 60 * 60 * 1000);
+         startDate + (pkg.duration * 24 * 60 * 60 * 1000);
 
         console.log("Mulai update member...");
 
