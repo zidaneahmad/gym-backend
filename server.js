@@ -129,8 +129,10 @@ app.post("/webhook", async (req, res) => {
         const pkg = pkgSnap.data();
 
         const startDate = Date.now();
+        
+        const duration = Number(pkg.duration || 0);
         const endDate =
-         startDate + (pkg.duration * 24 * 60 * 60 * 1000);
+         startDate + (duration * 24 * 60 * 60 * 1000);
 
         console.log("Mulai update member...");
 
