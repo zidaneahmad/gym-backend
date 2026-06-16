@@ -63,7 +63,10 @@ app.post("/create-token", async (req, res) => {
       }],
     });
 
-    await db.collection("orders").add({
+    console.log("=== CREATE TOKEN DIPANGGIL ===");
+    console.log(req.body);
+
+    const orderRef = await db.collection("orders").add({
       uid,
       packageId,
       packageName,
@@ -72,6 +75,10 @@ app.post("/create-token", async (req, res) => {
       status: "pending",
       createdAt: new Date(),
     });
+
+      console.log("=== ORDER TERSIMPAN ===");
+      console.log("Firestore Doc ID:", orderRef.id);
+      console.log("Midtrans Order ID:", orderId);
 
     return res.json({token: transaction.token, orderId});
   } catch (err) {
@@ -97,9 +104,14 @@ app.post("/webhook", async (req, res) => {
         .where("orderId", "==", order_id)
         .get();
 
+        console.log("Order ditemukan:", orderSnap.size);
+
       if (!orderSnap.empty) {
         const orderDoc = orderSnap.docs[0];
         const orderData = orderDoc.data();
+
+        console.log("OrderData:", orderData);
+
 
         await orderDoc.ref.update({status: "paid"});
 
@@ -107,6 +119,8 @@ app.post("/webhook", async (req, res) => {
           .collection("membership_packages")
           .doc(orderData.packageId)
           .get();
+
+          console.log("Package exists:", pkgSnap.exists);
 
         if (pkgSnap.exists) {
           const pkg = pkgSnap.data();
