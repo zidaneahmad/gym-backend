@@ -32,10 +32,10 @@ const db = getFirestore();
 
 // ── Create Snap Token ──────────────────────────────────────
 app.post("/create-token", async (req, res) => {
-  const {packageId, packageName, price, memberName, email, uid} = req.body;
+  const { packageId, packageName, price, memberName, email, uid } = req.body;
 
   if (!uid || !packageId || !price) {
-    return res.status(400).json({error: "Data tidak lengkap"});
+    return res.status(400).json({ error: "Data tidak lengkap" });
   }
 
   const snap = new midtransClient.Snap({
@@ -76,14 +76,14 @@ app.post("/create-token", async (req, res) => {
       createdAt: new Date(),
     });
 
-      console.log("=== ORDER TERSIMPAN ===");
-      console.log("Firestore Doc ID:", orderRef.id);
-      console.log("Midtrans Order ID:", orderId);
+    console.log("=== ORDER TERSIMPAN ===");
+    console.log("Firestore Doc ID:", orderRef.id);
+    console.log("Midtrans Order ID:", orderId);
 
-    return res.json({token: transaction.token, orderId});
+    return res.json({ token: transaction.token, orderId });
   } catch (err) {
     console.error("create-token error:", err.message);
-    return res.status(500).json({error: err.message});
+    return res.status(500).json({ error: err.message });
   }
 });
 
@@ -92,7 +92,7 @@ app.post("/webhook", async (req, res) => {
   console.log("=== WEBHOOK MASUK ===");
   console.log(req.body);
 
-  const {order_id, transaction_status, fraud_status} = req.body;
+  const { order_id, transaction_status, fraud_status } = req.body;
 
   const isSuccess =
     (transaction_status === "capture" && fraud_status === "accept") ||
@@ -104,49 +104,66 @@ app.post("/webhook", async (req, res) => {
         .where("orderId", "==", order_id)
         .get();
 
-          console.log("Order ditemukan:", orderSnap.size);
+      console.log("Order ditemukan:", orderSnap.size);
 
-    if (!orderSnap.empty) {
-      const orderDoc = orderSnap.docs[0];
-      const orderData = orderDoc.data();
+      if (!orderSnap.empty) {
+        const orderDoc = orderSnap.docs[0];
+        const orderData = orderDoc.data();
 
-      console.log("Sebelum update status");
+        if (orderData.status === "paid") {
+          console.log("Order sudah paid, skip");
+          return res.sendStatus(200);
+        }
 
-      await orderDoc.ref.update({
-        status: "paid"
-      });
+        await orderDoc.ref.update({ status: "paid" });
+        console.log("Status order berhasil diupdate menjadi paid");
 
-      console.log("Status order berhasil diupdate menjadi paid");
+        const pkgSnap = await db
+          .collection("membership_packages")
+          .doc(orderData.packageId)
+          .get();
 
-      const pkgSnap = await db
-        .collection("membership_packages")
-        .doc(orderData.packageId)
-        .get();
+        console.log("Package exists:", pkgSnap.exists);
 
-      console.log("Package exists:", pkgSnap.exists);
+        if (pkgSnap.exists) {
+          const pkg = pkgSnap.data();
+          const duration = Number(pkg.duration || 0);
+          const durationMs = duration * 24 * 60 * 60 * 1000;
 
-      if (pkgSnap.exists) {
-        const pkg = pkgSnap.data();
+          const memberSnap = await db.collection("members")
+            .doc(orderData.uid)
+            .get();
+          const memberData = memberSnap.data();
 
-        const startDate = Date.now();
-        
-        const duration = Number(pkg.duration || 0);
-        const endDate =
-         startDate + (duration * 24 * 60 * 60 * 1000);
+          const now = Date.now();
 
-        console.log("Mulai update member...");
+          
+          const currentEndDate = memberData?.endDate || 0;
+          const baseDate = currentEndDate > now ? currentEndDate : now;
+          const newEndDate = baseDate + durationMs;
 
-        await db.collection("members").doc(orderData.uid).update({
-          activePackageId: orderData.packageId,
-          startDate,
-          endDate,
-          isActive: true,
-          pricePaid: orderData.amount,
-        });
+          const newStartDate = currentEndDate > now
+            ? memberData.startDate  
+            : now;                  
 
-        console.log("Member berhasil diupdate");
+          const currentPricePaid = memberData?.pricePaid || 0;
+          const newPricePaid = currentPricePaid + orderData.amount;
+
+          console.log("currentEndDate:", new Date(currentEndDate));
+          console.log("newEndDate:", new Date(newEndDate));
+          console.log("newPricePaid:", newPricePaid);
+
+          await db.collection("members").doc(orderData.uid).update({
+            activePackageId: orderData.packageId,
+            startDate: newStartDate,       
+            endDate: newEndDate,           
+            isActive: true,
+            pricePaid: newPricePaid,       
+          });
+
+          console.log("Member berhasil diupdate");
+        }
       }
-    }
     } catch (err) {
       console.error("Webhook error lengkap:", err);
     }
