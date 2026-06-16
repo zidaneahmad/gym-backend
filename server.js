@@ -82,6 +82,9 @@ app.post("/create-token", async (req, res) => {
 
 // ── Webhook Midtrans ───────────────────────────────────────
 app.post("/webhook", async (req, res) => {
+  console.log("=== WEBHOOK MASUK ===");
+  console.log(req.body);
+
   const {order_id, transaction_status, fraud_status} = req.body;
 
   const isSuccess =
@@ -100,22 +103,23 @@ app.post("/webhook", async (req, res) => {
 
         await orderDoc.ref.update({status: "paid"});
 
-        const pkgSnap = await db.collection("packages")
+        const pkgSnap = await db
+          .collection("membership_packages")
           .doc(orderData.packageId)
           .get();
 
         if (pkgSnap.exists) {
           const pkg = pkgSnap.data();
-          const expiry = new Date(
-            Date.now() + pkg.durationInDays * 24 * 60 * 60 * 1000
-          );
+          const startDate = Date.now();
+          const endDate = startDate + (pkg.durationInDays * 24 * 60 * 60 * 1000);
 
           await db.collection("members").doc(orderData.uid).update({
             activePackageId: orderData.packageId,
-            packageName: orderData.packageName,
-            expiryDate: expiry,
-            status: "active",
-          });
+            startDate,
+            endDate,
+            isActive: true,
+            pricePaid: orderData.amount,
+});
         }
       }
     } catch (err) {
