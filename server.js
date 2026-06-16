@@ -104,40 +104,49 @@ app.post("/webhook", async (req, res) => {
         .where("orderId", "==", order_id)
         .get();
 
-        console.log("Order ditemukan:", orderSnap.size);
+          console.log("Order ditemukan:", orderSnap.size);
 
-      if (!orderSnap.empty) {
-        const orderDoc = orderSnap.docs[0];
-        const orderData = orderDoc.data();
+    if (!orderSnap.empty) {
+      const orderDoc = orderSnap.docs[0];
+      const orderData = orderDoc.data();
 
-        console.log("OrderData:", orderData);
+      console.log("Sebelum update status");
 
+      await orderDoc.ref.update({
+        status: "paid"
+      });
 
-        await orderDoc.ref.update({status: "paid"});
+      console.log("Status order berhasil diupdate menjadi paid");
 
-        const pkgSnap = await db
-          .collection("membership_packages")
-          .doc(orderData.packageId)
-          .get();
+      const pkgSnap = await db
+        .collection("membership_packages")
+        .doc(orderData.packageId)
+        .get();
 
-          console.log("Package exists:", pkgSnap.exists);
+      console.log("Package exists:", pkgSnap.exists);
 
-        if (pkgSnap.exists) {
-          const pkg = pkgSnap.data();
-          const startDate = Date.now();
-          const endDate = startDate + (pkg.durationInDays * 24 * 60 * 60 * 1000);
+      if (pkgSnap.exists) {
+        const pkg = pkgSnap.data();
 
-          await db.collection("members").doc(orderData.uid).update({
-            activePackageId: orderData.packageId,
-            startDate,
-            endDate,
-            isActive: true,
-            pricePaid: orderData.amount,
-});
-        }
+        const startDate = Date.now();
+        const endDate =
+          startDate + (pkg.durationInDays * 24 * 60 * 60 * 1000);
+
+        console.log("Mulai update member...");
+
+        await db.collection("members").doc(orderData.uid).update({
+          activePackageId: orderData.packageId,
+          startDate,
+          endDate,
+          isActive: true,
+          pricePaid: orderData.amount,
+        });
+
+        console.log("Member berhasil diupdate");
       }
+    }
     } catch (err) {
-      console.error("Webhook error:", err.message);
+      console.error("Webhook error lengkap:", err);
     }
   }
 
